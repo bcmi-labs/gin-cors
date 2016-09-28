@@ -18,6 +18,7 @@ package cors
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 
@@ -25,11 +26,11 @@ import (
 )
 
 const (
-	AllowOriginKey      string = "Access-Control-Allow-Origin"
-	AllowCredentialsKey        = "Access-Control-Allow-Credentials"
-	AllowHeadersKey            = "Access-Control-Allow-Headers"
-	AllowMethodsKey            = "Access-Control-Allow-Methods"
-	MaxAgeKey                  = "Access-Control-Max-Age"
+	AllowOriginKey      = "Access-Control-Allow-Origin"
+	AllowCredentialsKey = "Access-Control-Allow-Credentials"
+	AllowHeadersKey     = "Access-Control-Allow-Headers"
+	AllowMethodsKey     = "Access-Control-Allow-Methods"
+	MaxAgeKey           = "Access-Control-Max-Age"
 
 	OriginKey         = "Origin"
 	RequestMethodKey  = "Access-Control-Request-Method"
@@ -52,7 +53,7 @@ type Config struct {
 	// Comma delimited list of origin domains. Wildcard "*" is also allowed, and matches all origins.
 	// If the origin does not match an item in the list, then the request is denied.
 	Origins string
-	origins []string
+	origins []*regexp.Regexp
 
 	// This are the headers that the resource supports, and will accept in the request.
 	// Default is "Authorization".
@@ -85,7 +86,13 @@ type Config struct {
 // One time, do the conversion from our the public facing Configuration,
 // to all the formats we use internally strings for headers.. slices for looping
 func (config *Config) prepare() {
-	config.origins = strings.Split(config.Origins, ", ")
+	originStr := strings.Replace(config.Origins, "*", "[^/?#]+", -1)
+	// Escape all occurrences of . since . is a special character in regexp
+	originStr = strings.Replace(originStr, ".", `\.`, -1)
+	origins := strings.Split(originStr, ", ")
+	for _, origin := range origins {
+		config.origins = append(config.origins, regexp.MustCompile("^"+origin+"$"))
+	}
 	config.methods = strings.Split(config.Methods, ", ")
 	config.requestHeaders = strings.Split(config.RequestHeaders, ", ")
 	config.maxAge = fmt.Sprintf("%.f", config.MaxAge.Seconds())
@@ -205,7 +212,7 @@ func handleRequest(context *gin.Context, config Config) bool {
 // Case-sensitive match of origin header
 func matchOrigin(origin string, config Config) bool {
 	for _, value := range config.origins {
-		if value == origin {
+		if value.MatchString(origin) {
 			return true
 		}
 	}

@@ -3,8 +3,8 @@ package cors_test
 import (
 	"time"
 
+	"github.com/andela/gin-cors"
 	"github.com/gin-gonic/gin"
-	"github.com/itsjamie/gin-cors"
 )
 
 func ExampleMiddleware() {
