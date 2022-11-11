@@ -26,11 +26,12 @@ import (
 )
 
 const (
-	AllowOriginKey      = "Access-Control-Allow-Origin"
-	AllowCredentialsKey = "Access-Control-Allow-Credentials"
-	AllowHeadersKey     = "Access-Control-Allow-Headers"
-	AllowMethodsKey     = "Access-Control-Allow-Methods"
-	MaxAgeKey           = "Access-Control-Max-Age"
+	AllowOriginKey           = "Access-Control-Allow-Origin"
+	AllowCredentialsKey      = "Access-Control-Allow-Credentials"
+	AllowHeadersKey          = "Access-Control-Allow-Headers"
+	AllowMethodsKey          = "Access-Control-Allow-Methods"
+	MaxAgeKey                = "Access-Control-Max-Age"
+	RequestPrivateNetworkKey = "Access-Control-Request-Private-Network"
 
 	OriginKey         = "Origin"
 	RequestMethodKey  = "Access-Control-Request-Method"
@@ -81,6 +82,10 @@ type Config struct {
 	// is passed to the browser, but is not enforced.
 	Credentials bool
 	credentials string
+
+	// If true, requests to private IP addresses are allowed as per Private Network Access.
+	RequestPrivateNetwork bool
+	requestPrivateNetwork string
 }
 
 // One time, do the conversion from our the public facing Configuration,
@@ -99,6 +104,7 @@ func (config *Config) prepare() {
 
 	// Generates a boolean of value "true".
 	config.credentials = fmt.Sprintf("%t", config.Credentials)
+	config.requestPrivateNetwork = fmt.Sprintf("%t", config.RequestPrivateNetwork)
 
 	// Convert to lower-case once as request headers are supposed to be a case-insensitive match
 	for idx, header := range config.requestHeaders {
@@ -191,6 +197,10 @@ func handlePreflight(context *gin.Context, config Config, requestMethod string) 
 		context.Writer.Header().Set(AllowMethodsKey, config.Methods)
 		context.Writer.Header().Set(AllowHeadersKey, config.RequestHeaders)
 
+		if ok := validatePrivateNetworkHeader(context.Request.Header.Get(RequestPrivateNetworkKey), config); ok == true {
+			context.Writer.Header().Set(RequestPrivateNetworkKey, config.requestPrivateNetwork)
+		}
+
 		if config.maxAge != "0" {
 			context.Writer.Header().Set(MaxAgeKey, config.maxAge)
 		}
@@ -261,4 +271,8 @@ func validateRequestHeaders(requestHeaders string, config Config) bool {
 	}
 
 	return true
+}
+
+func validatePrivateNetworkHeader(requestHeader string, config Config) bool {
+	return requestHeader == "true" && config.RequestPrivateNetwork
 }

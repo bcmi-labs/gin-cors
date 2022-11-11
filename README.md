@@ -34,6 +34,7 @@ ExposeHeaders      | *string*        | A comma delimited list of HTTP headers th
 Methods            | *string*        | A comma delimited list of allowed HTTP methods that is passed to the browser in the **Access-Control-Allow-Methods**.
 MaxAge             | *time.Duration* | The amount of time a preflight request should be cached, if not specified, the header **Access-Control-Max-Age** will not be set.
 Credentials        | *bool*          | This is passed in the **Access-Control-Allow-Credentials** header. If ```true``` Cookies, HTTP authentication and the client-side SSL certificates will be sent on previous interactions with the origin.
+RequestPrivateNetwork        | *bool*          | If ```true``` requests performed to private network addresses is allowed. The browser automatically generates a request with header ```Access-Control-Request-Private-Network: true``` and the library responds with ```Access-Control-Allow-Private-Network: true```.
 ValidateHeaders    | *bool*          | If ```false``` we skip validating the requested headers/methods with the list of allowed ones, and instead just respond with all what we support, it is up to the client implementating CORS to deny the request. This is an optimization allowed by the specification. 
 
 
