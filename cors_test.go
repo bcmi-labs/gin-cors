@@ -299,6 +299,31 @@ func TestValidateHeaders(t *testing.T) {
 	}
 }
 
+func TestPrivateNetworkAccess(t *testing.T) {
+	req, _ := http.NewRequest("OPTIONS", "/", nil)
+	w := httptest.NewRecorder()
+
+	req.Header.Set(RequestMethodKey, "GET")
+	req.Header.Set(OriginKey, "http://127.0.0.1")
+	req.Header.Set(RequestPrivateNetworkKey, "true")
+
+	router := gin.New()
+	router.Use(Middleware(Config{
+		Origins:               "http://127.0.0.1",
+		ValidateHeaders:       true,
+		ExposedHeaders:        "Authorization",
+		Credentials:           false,
+		RequestPrivateNetwork: true,
+		Methods:               "GET, POST",
+		MaxAge:                1 * time.Minute,
+	}))
+	router.ServeHTTP(w, req)
+
+	if w.Header().Get(RequestPrivateNetworkKey) != "true" {
+		t.Fatal("Private Network Access not supported.")
+	}
+}
+
 func BenchmarkSortFive(b *testing.B) {
 	ssHeaders := sort.StringSlice(strings.Split(sHeaders, ", "))
 	sort.Sort(ssHeaders)
